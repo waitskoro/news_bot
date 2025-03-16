@@ -3,7 +3,7 @@ import json
 class Config:
     def __init__(self):
         self.__config = None
-        self.__download_config('config.json')
+        self.__download_config('../config.json')
 
     def __download_config(self, config_path):
         with open(config_path, 'r', encoding='utf-8') as f:
