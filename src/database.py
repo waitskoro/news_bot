@@ -23,9 +23,31 @@ class Database:
             db.commit()
             print(f"Пользователь {username} успешно добавлен!")
 
+    def add_source(self, name, link):
+        with Session(autoflush=False, bind=self.__engine) as db:
+            existing_source = db.query(NewsSources).filter(NewsSources.name == name).first()
+            if existing_source:
+                print(f"Источник новостей {name} уже существует!")
+                return
+
+            new_source = NewsSources(name=name, link=link)
+            db.add(new_source)
+            db.commit()
+            print(f"Источник новостей {name} успешно добавлен!")
+
+    def get_sources(self):
+        with Session(autoflush=False, bind=self.__engine) as db:
+            return db.query(NewsSources).all()
+
 class Base(DeclarativeBase): pass
 
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
-    username = Column(String)
+    username = Column(String, unique=True)
+
+class NewsSources(Base):
+    __tablename__ = "news_sources"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True)
+    link = Column(String)
