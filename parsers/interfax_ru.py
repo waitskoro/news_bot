@@ -2,12 +2,22 @@ import time
 
 import requests
 from bs4 import BeautifulSoup
-
+from selenium import webdriver
+from selenium.webdriver.common.by import By
 
 url = 'https://www.interfax.ru/'
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
 }
+
+driver = webdriver.Chrome()
+driver.get(url)
+
+
+for i in range(5):
+    python_button = driver.find_element(By.CLASS_NAME, "timeline__more")
+    python_button.click()
+    time.sleep(10)
 
 def get_soup():
     try:
@@ -48,8 +58,8 @@ def process_timeline_news(items):
             continue
 
         processed.add(text)
-        time = extract_time(time_tag)
-        news_items.append(f"[{time}] {text}")
+        time_hhmm = extract_time(time_tag)
+        news_items.append(f"[{time_hhmm}] {text}")
 
     return news_items
 
@@ -94,6 +104,4 @@ def parse_interfax():
 
 if __name__=="__main__":
 
-    while True:
-        parse_interfax()
-        time.sleep(60 * 3)
+    parse_interfax()
