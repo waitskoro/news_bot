@@ -2,15 +2,13 @@ import json
 import telebot
 from telebot import types
 
-def download_config(config_path):
-    with open(config_path, 'r', encoding='utf-8') as f:
-        config = json.load(f)
-    return config
+from src.config_parser import Config
+
 
 class Main:
     def __init__(self):
-        self.__config = download_config('config.json')
-        self.__bot = telebot.TeleBot(self.__config['token'])
+        self.__config = Config()
+        self.__bot = telebot.TeleBot(self.__config.get_token_config())
 
         self.__bot.message_handler(commands=['start'])(self.start_message)
 
