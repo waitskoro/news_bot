@@ -1,8 +1,8 @@
 import telebot
 from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup
 
-from src.config_parser import Config
-from src.database import Database
+from bot.handlers.config_parser import Config
+from db.database import Database
 
 
 class Main:
