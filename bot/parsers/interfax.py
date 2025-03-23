@@ -62,7 +62,7 @@ class Interfax:
                     title = link_element.get_attribute('title') or link_element.find_element(By.TAG_NAME, 'h3').text
                     url = link_element.get_attribute('href')
 
-                    self.db.set_news(title=title, datetime=parsed_time, url=url, source_id=info.id)
+                    self.db.set_news(title=title, datetime=parsed_time, url=url, magazine_id=info.id)
 
                 except Exception as e:
                     continue

@@ -34,7 +34,7 @@ class Kommersant:
                 url = item.get_attribute('data-article-url')
 
                 info = self.db.get_source("Коммерсантъ")
-                self.db.set_news(title=title, datetime=datetime, url=url, source_id=info.id)
+                self.db.set_news(title=title, datetime=datetime, url=url, magazine_id=info.id)
 
             print(f"Просмотренные новости: {len(news_items)}. Коммерсантъ.")
 

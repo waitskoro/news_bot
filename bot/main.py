@@ -13,6 +13,7 @@ from bot.handlers.config_parser import Config
 
 class Main:
     def __init__(self):
+        self.__db_user_id = None
         self.interfax = None
         self.kommersant = None
         self.bloomberg = None
@@ -127,10 +128,10 @@ class Main:
         user_id = call.from_user.id
 
         if data.startswith("subscribe_"):
-            source_id = int(data.split("_")[1])
+            magazine_id = int(data.split("_")[1])
             try:
                 # Переключаем подписку и получаем результат
-                result = self.__database.add_subscription(user_id, source_id)
+                result = self.__database.add_subscription(user_id, magazine_id)
 
                 if result == 'added':
                     # Обновляем интерфейс
@@ -177,7 +178,7 @@ class Main:
 
     def __create_updated_keyboard(self):
         subscriptions = self.__database.get_user_subscriptions(self.__user_id)
-        subscribed_ids = {sub.source_id for sub in subscriptions}
+        subscribed_ids = {sub.magazine_id for sub in subscriptions}
 
         sources = self.__database.get_sources()
         buttons = []

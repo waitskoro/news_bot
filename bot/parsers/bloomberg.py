@@ -68,7 +68,7 @@ class Bloomberg:
                         title=title,
                         datetime=parsed_time,
                         url=url,
-                        source_id=info.id
+                        magazine_id=info.id
                     )
 
                 except Exception as e:

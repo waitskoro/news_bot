@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, func
 
-from db.models import Base, Source, News
+from db.models import Base, Source, News, User, Subscribe
 
 
 class Database:
@@ -30,12 +30,66 @@ class Database:
         with Session(autoflush=False, bind=self.__engine) as db:
             return db.query(Source).filter(func.lower(Source.name) == name.lower()).first()
 
-    def set_news(self, source_id, title, url, datetime):
+    def set_news(self, magazine_id, title, url, datetime):
         with Session(autoflush=False, bind=self.__engine) as db:
             existing_new = db.query(News).filter(func.lower(News.title) == title.lower(),
-                                                          News.magazine_id == source_id).first()
+                                                          News.magazine_id == magazine_id).first()
 
             if not existing_new:
-                new = News(title=title, link=url, datetime=datetime, magazine_id=source_id)
+                new = News(title=title, link=url, datetime=datetime, magazine_id=magazine_id)
                 db.add(new)
                 db.commit()
+
+    def add_user(self, telegram_id, username):
+        with Session(autoflush=False, bind=self.__engine) as db:
+            existing_user = db.query(User).filter(func.lower(User.username) == username.lower(),
+                                                          User.telegram_id == telegram_id).first()
+            if not existing_user:
+                user = User(telegram_id=telegram_id, username=username)
+                db.add(user)
+                db.commit()
+
+    def get_user(self, telegram_id):
+        with Session(autoflush=False, bind=self.__engine) as db:
+            return db.query(User).filter(User.telegram_id == telegram_id).first()
+
+
+    def get_user_subscriptions(self, telegram_id):
+        with Session(autoflush=False, bind=self.__engine) as db:
+            user = self.get_user(telegram_id=telegram_id)
+            if user:
+                return db.query(Subscribe).filter(Subscribe.user_id == user.id).all()
+
+    def get_sources(self):
+        with Session(autoflush=False, bind=self.__engine) as db:
+            return db.query(Source).all()
+
+    def add_subscription(self, telegram_id: int, magazine_id: int) -> str:
+        print(f"Переключение подписки: telegram_id={telegram_id}, magazine_id={magazine_id}")
+
+        user_id = self.get_user(telegram_id=telegram_id).id
+
+        with Session(autoflush=False, bind=self.__engine) as db:
+            try:
+                sub = db.query(Subscribe).filter_by(user_id=user_id, magazine_id=magazine_id).first()
+
+                if sub:
+                    db.delete(sub)
+                    db.commit()
+                    print("Подписка успешно удалена")
+                    return 'removed'
+                else:
+                    new_sub = Subscribe(user_id=user_id, magazine_id=magazine_id)
+                    db.add(new_sub)
+                    db.commit()
+                    print("Подписка успешно добавлена")
+                    return 'added'
+
+            except Exception as e:
+                print(f"Ошибка: {str(e)}")
+                db.rollback()
+                return 'error'
+
+
+
+
