@@ -32,11 +32,19 @@ class Database:
 
     def set_news(self, magazine_id, title, url, datetime):
         with Session(autoflush=False, bind=self.__engine) as db:
-            existing_new = db.query(News).filter(func.lower(News.title) == title.lower(),
-                                                          News.magazine_id == magazine_id).first()
+            existing_new = db.query(News).filter(
+                func.lower(News.title) == title.lower(),
+                News.magazine_id == magazine_id
+            ).first()
 
             if not existing_new:
-                new = News(title=title, link=url, datetime=datetime, magazine_id=magazine_id)
+                new = News(
+                    title=title,
+                    link=url,
+                    datetime=datetime,
+                    magazine_id=magazine_id,
+                    is_sent=False  # Явно устанавливаем значение
+                )
                 db.add(new)
                 db.commit()
 
@@ -89,6 +97,49 @@ class Database:
                 print(f"Ошибка: {str(e)}")
                 db.rollback()
                 return 'error'
+
+    def get_unsent_news(self):
+        with Session(autoflush=False, bind=self.__engine) as db:
+            return db.query(News).filter(
+                News.is_sent.is_(False) | News.is_sent.is_(None)
+            ).all()
+
+    def mark_news_as_sent(self, news_id):
+        with Session(autoflush=False, bind=self.__engine) as db:
+            news = db.query(News).filter(News.id == news_id).first()
+            if news:
+                news.is_sent = True
+                db.commit()
+
+    def get_subscribers_by_source(self, magazine_id):
+        with Session(autoflush=False, bind=self.__engine) as db:
+            return db.query(Subscribe).filter(Subscribe.magazine_id == magazine_id).all()
+
+    def get_source_by_id(self, source_id):
+        with Session(autoflush=False, bind=self.__engine) as db:
+            return db.query(Source).filter(Source.id == source_id).first()
+
+    def get_latest_news_by_sources(self, source_ids, limit=5):
+        with Session(autoflush=False, bind=self.__engine) as db:
+            return (db.query(News)
+                    .filter(News.magazine_id.in_(source_ids))
+                    .order_by(News.datetime.desc())
+                    .limit(limit)
+                    .all())
+
+    def get_user_by_id(self, user_id):
+        with Session(autoflush=False, bind=self.__engine) as db:
+            return db.query(User).filter(User.id == user_id).first()
+
+    def remove_all_subscriptions(self, telegram_id):
+        """Удаляет все подписки пользователя"""
+        with Session(autoflush=False, bind=self.__engine) as db:
+            user = self.get_user(telegram_id)
+            if user:
+                db.query(Subscribe).filter(Subscribe.user_id == user.id).delete()
+                db.commit()
+                return True
+            return False
 
 
 

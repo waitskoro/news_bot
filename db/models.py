@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, Integer, String, Text, Column, ForeignKey, DateTime, UniqueConstraint
+from sqlalchemy import BigInteger, Integer, String, Text, Column, ForeignKey, DateTime, UniqueConstraint, Boolean
 from sqlalchemy.orm import DeclarativeBase, relationship
 from datetime import datetime
 
@@ -32,9 +32,10 @@ class News(Base):
     __tablename__ = 'News'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    title = Column(String(255), nullable=False)
+    title = Column(String(500), nullable=False)
     link = Column(Text, nullable=False, unique=True)
     datetime = Column(DateTime, nullable=False)
+    is_sent = Column(Boolean, nullable=False, default=False)
     magazine_id = Column(Integer, ForeignKey('Source.id'), nullable=False)
 
     source = relationship('Source', back_populates='news')

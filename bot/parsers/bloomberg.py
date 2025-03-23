@@ -4,17 +4,19 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-
+from googletrans import Translator
+from fake_useragent import UserAgent
 
 class Bloomberg:
     def __init__(self, url, db):
         self.url = url
         self.db = db
-        self.user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        ua = UserAgent()
+        self.user_agent = ua.random
+        self.translator = Translator()
 
     def parse_relative_time(self, time_str):
         try:
-            # Парсим относительное время
             numbers = re.findall(r'\d+', time_str)
             if not numbers:
                 return datetime.now()
@@ -32,6 +34,15 @@ class Bloomberg:
         except Exception as e:
             print(f"Ошибка парсинга времени '{time_str}': {str(e)}")
             return datetime.now()
+
+    def translate_title(self, title):
+        """Переводит заголовок на русский язык."""
+        try:
+            translated = self.translator.translate(title, src='en', dest='ru')
+            return translated.text
+        except Exception as e:
+            print(f"Ошибка перевода заголовка '{title}': {str(e)}")
+            return title
 
     def scraping(self):
         options = webdriver.ChromeOptions()
@@ -52,20 +63,19 @@ class Bloomberg:
 
             for item in news_items:
                 try:
-                    # Парсим время
                     time_element = item.find_element(By.CSS_SELECTOR,
                                                      "div.LineupContentArchiveFiltered_itemTimestamp__lehuG time")
                     time_str = time_element.text.strip()
                     parsed_time = self.parse_relative_time(time_str)
 
-                    # Парсим заголовок и ссылку
                     link_element = item.find_element(By.CSS_SELECTOR, "a.LineupContentArchiveFiltered_storyLink__cz5Qc")
                     title = link_element.find_element(By.CSS_SELECTOR, "[data-testid='headline'] span").text.strip()
                     url = link_element.get_attribute('href')
 
-                    # Сохраняем в БД
+                    translated_title = self.translate_title(title)
+
                     self.db.set_news(
-                        title=title,
+                        title=translated_title,
                         datetime=parsed_time,
                         url=url,
                         magazine_id=info.id

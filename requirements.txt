@@ -8,3 +8,4 @@ pyTelegramBotAPI~=4.26.0
 googletrans~=4.0.0rc1
 webdriver-manager~=4.0.2
 dateparser~=1.2.1
+fake-useragent~=2.1.0
