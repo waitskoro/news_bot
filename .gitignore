@@ -1,4 +1,6 @@
-config.json
+*.json
+.json
 .idea
+!spec/*.json
 bot/handlers/__pychache__/
 db/__pychache/

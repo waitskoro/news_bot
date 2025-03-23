@@ -1,29 +1,103 @@
+import threading
+import time
+
 import telebot
 from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup
 
-from bot.handlers.config_parser import Config
 from db.database import Database
+from bot.parsers.interfax import Interfax
+from bot.parsers.bloomberg import Bloomberg
+from bot.parsers.komersant import Kommersant
+from bot.handlers.config_parser import Config
 
 
 class Main:
     def __init__(self):
-        self.__user_id = None
+        self.interfax = None
+        self.kommersant = None
+        self.bloomberg = None
+
         self.__database = None
         self.__config = Config()
+
+        self.__user_id = None
         self.__last_message_ids = {}
 
         self.__init_database()
+        self.__init_sources()
 
         self.__bot = telebot.TeleBot(self.__config.get_token_config())
 
-        # Регистрация обработчиков
         self.__bot.message_handler(commands=['start'])(self.start_message)
         self.__bot.callback_query_handler(func=lambda call: True)(self.callback_handler)
 
     def __init_database(self):
         self.__database = Database(self.__config.get_database_config())
-        self.__database.add_source('Российская газета', 'https://www.rg.ru/news/')
+        self.__database.add_source('Коммерсантъ', 'https://www.kommersant.ru/lenta/news?from=lenta_news')
         self.__database.add_source('Интерфакс', 'https://www.interfax.ru/')
+        self.__database.add_source('Bloomberg', 'https://www.bloomberg.com/latest?utm_campaign=latest')
+
+    def bloomberg_init(self):
+        bloomberg_set = self.__database.get_source('Bloomberg')
+        try:
+            self.bloomberg = Bloomberg(bloomberg_set.url, self.__database)
+        except Exception as e:
+            print(f"Ошибка")
+
+    def kommersant_init(self):
+        kommersant_set = self.__database.get_source('Коммерсантъ')
+        try:
+            self.kommersant = Kommersant(kommersant_set.url, self.__database)
+        except Exception as e:
+            print(f"Ошибка")
+
+    def interfax_init(self):
+        intefax_set = self.__database.get_source('Интерфакс')
+        try:
+            self.interfax = Interfax(intefax_set.url, self.__database)
+        except Exception as e:
+            print(f"Ошибка")
+
+    def __init_sources(self):
+        # Инициализация парсеров (без изменений)
+        init_threads = [
+            threading.Thread(target=self.bloomberg_init),
+            threading.Thread(target=self.kommersant_init),
+            threading.Thread(target=self.interfax_init)
+        ]
+
+        for thread in init_threads:
+            thread.start()
+
+        for thread in init_threads:
+            thread.join()
+
+        if not all([self.interfax, self.bloomberg, self.kommersant]):
+            raise RuntimeError("Один из парсеров не инициализирован")
+
+        self.start_periodic_scraping()
+
+    def start_periodic_scraping(self):
+        """Запускает методы scraping каждые 2 минуты в отдельных потоках."""
+
+        def run_periodically(parser):
+            while True:
+                try:
+                    parser.scraping()
+                except Exception as e:
+                    print(f"Ошибка в скрапинге {parser.__class__.__name__}: {e}")
+                time.sleep(180)  # 3 минуты
+
+        scraping_threads = [
+            threading.Thread(target=run_periodically, args=(self.kommersant,), daemon=True),
+            threading.Thread(target=run_periodically, args=(self.bloomberg,), daemon=True),
+            threading.Thread(target=run_periodically, args=(self.interfax,), daemon=True)
+        ]
+
+        for thread in scraping_threads:
+            thread.start()
+
+        print("Периодический скрапинг запущен")
 
     def start_message(self, message):
         self.__user_id = message.chat.id
