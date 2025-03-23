@@ -1,11 +1,12 @@
-from sqlalchemy.orm import Session, relationship
-from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey
+from sqlalchemy.orm import Session
+from sqlalchemy import create_engine
+from db.models import Base, User, Subscription, NewsSources
 
 
 class Database:
     def __init__(self, config):
-        self.__engine = create_engine(f"postgresql://{config['user']}:"
+        self.__engine = create_engine(f"postgresql://"
+                                      f"{config['user']}:"
                                       f"{config['password']}@"
                                       f"{config['host']}/"
                                       f"{config['dbname']}")
@@ -76,27 +77,3 @@ class Database:
     def get_user_subscriptions(self, user_id: int):
         with Session(autoflush=False, bind=self.__engine) as db:
             return db.query(Subscription).filter(Subscription.user_id == user_id).all()
-
-class Base(DeclarativeBase):
-    pass
-
-class User(Base):
-    __tablename__ = "users"
-    id = Column(Integer, primary_key=True)
-    username = Column(String, unique=True)
-    subscribes = relationship("Subscription", back_populates="user")
-
-class NewsSources(Base):
-    __tablename__ = "news_sources"
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True)
-    link = Column(String)
-    subscribes = relationship("Subscription", back_populates="source")
-
-class Subscription(Base):
-    __tablename__ = "subscriptions"
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    source_id = Column(Integer, ForeignKey("news_sources.id"))
-    user = relationship("User", back_populates="subscribes")
-    source = relationship("NewsSources", back_populates="subscribes")

@@ -1,3 +1,4 @@
 config.json
 .idea
-src/__pycache__/
+bot/handlers/__pychache__/
+db/__pychache/
